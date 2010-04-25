@@ -14,6 +14,6 @@ class IsolationTests(unittest2.TestCase):
         import math
         @isolate_from("math")
         def isolated_from_math_imports():
-            raise Exception("Method was called although os was imported")
+            raise Exception("Method was called although math was imported")
         self.assertRaises(IsolationException, isolated_from_math_imports)
 

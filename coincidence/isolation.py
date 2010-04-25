@@ -7,11 +7,15 @@ from coincidence.timeout import timelimited
 
 log = logging.getLogger("isolation")
 
+def already_imported(*modules):
+    return [module for module in modules if module in sys.modules]
+
 class IsolationException(Exception):
     pass
 
 class isolate(object):
     """Decorator that only runs a function within a new process"""
+    
     def __init__(self, func):
         self._func = func
 
@@ -24,20 +28,29 @@ class isolate_from(object):
     sure that none of the named modules have been imported
     yet, otherwhise raise an IsolationException"""
 
-    def __init__(self, *modules):
+    def __init__(self, *modules, **kwargs):
+        """Isolate a function from specific imports
+
+        modules list of modules that are not allowed
+            to be present at the point of execution.
+
+        spawn_process boolean optional run this function inside its
+            own process, protecting the host process from import side effects
+        """
+        print modules
         self.modules = modules
+        self.spawn_process = kwargs.get('spawn_process', True)
 
     def __call__(self, func=None):
         def wrapped(*args, **kwargs):
-            for module in self.modules:
-                if module in sys.modules:
-                    referring = [obj for obj in gc.get_referrers(sys.modules[module]) if obj != sys.modules]
-                    ref_frames = filter(lambda obj: isinstance(obj, FrameType), referring)
-                    log.error("Where imports have happened or references are held")
-                    log.error("\n".join(["%s %s %s" % (obj.f_code.co_filename,
-                                                       obj.f_lineno,
-                                                       obj.f_code.co_name) for obj in ref_frames]))
-                    raise IsolationException("Module %s was already imported" % module)
-            return timelimited(None, func, *args, **kwargs)
+            modules = already_imported(*self.modules)
+            if modules:
+                raise IsolationException(
+                        "Module %s was already imported" % ', '.join(modules))
+            if self.spawn_process:
+                return timelimited(None, func, *args, **kwargs)
+            else:
+                return func(*args, **kwargs)
+            
         return wrapped
 
