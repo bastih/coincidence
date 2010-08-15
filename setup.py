@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 import coincidence
 
-requires = []
+requires = ['unittest2']
 
 try:
     import multiprocessing
