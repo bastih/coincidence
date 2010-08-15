@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 import coincidence
 
-requires = ['unittest2']
+requires = ['unittest2', 'nose']
 
 try:
     import multiprocessing
